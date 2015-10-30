@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
-import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.Objects;
 import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
@@ -120,13 +119,10 @@ public class AdvantechProject {
 				JsonObject jo = (JsonObject) o;
 				AdvantechTag tag = subCopy.get((String) jo.get("Name"));
 				Object val = jo.get("Value");
-				if (val instanceof String) {
-					tag.node.setValueType(ValueType.STRING);
-					tag.node.setValue(new Value((String) val));
-				} else {
-					tag.node.setValueType(ValueType.NUMBER);
-					tag.node.setValue(new Value((Number) val));
-				}
+				String type = tag.node.getAttribute("TYPE").getString();
+				if (AdvantechTag.isAnalog(type)) tag.node.setValue(new Value((Number) val));
+				else if (AdvantechTag.isDiscrete(type)) tag.node.setValue(new Value(tag.states[(Integer) val]));
+				else tag.node.setValue(new Value((String) val));
 			}
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
