@@ -42,6 +42,8 @@ public class Utils {
 	public static final String PROJ_TAG_DETAIL = "http://{HostIp}/WaWebService/Json/TagDetail/{ProjectName}";
 	public static final String NODE_TAG_DETAIL = "http://{HostIp}/WaWebService/Json/TagDetail/{ProjectName}/{NodeName}";
 	public static final String TAG_VALUE = "http://{HostIp}/WaWebService/Json/GetTagValue/{ProjectName}";
+	public static final String SET_TAG_VALUE = "http://{HostIp}/WaWebService/Json/SetTagValue/{ProjectName}";
+	public static final String SET_TAG_VAUE_TEXT = "http://{HostIp}/WaWebService/Json/SetTagValueText/{ProjectName}";
 	
 	public static String sendGet(String urlString, Map<String, String> urlParams, String authString) throws ApiException {
 		urlString = getUrlString(urlString, urlParams);

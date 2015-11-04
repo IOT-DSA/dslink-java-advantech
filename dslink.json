@@ -1,6 +1,6 @@
 {
   "name": "dslink-java-advantech",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A dslink for advantech",
   "license": "GNU GPL",
   "main": "bin/dslink-java-advantech",
