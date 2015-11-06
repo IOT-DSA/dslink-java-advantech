@@ -48,20 +48,6 @@ public class AdvantechConn {
 		
 		login();
 		
-		if (loggedIn) {
-			node.removeChild("login");
-		} else {
-			Action act = new Action(Permission.READ, new LoginHandler());
-			act.addParameter(new Parameter("IP", ValueType.STRING, node.getAttribute("IP")));
-			act.addParameter(new Parameter("Username", ValueType.STRING, node.getAttribute("Username")));
-			act.addParameter(new Parameter("Password", ValueType.STRING, node.getAttribute("Password")).setEditorType(EditorType.PASSWORD));
-			act.addParameter(new Parameter("Polling interval", ValueType.NUMBER, node.getAttribute("Polling interval")));
-			Node anode = node.getChild("login");
-			if (anode == null) node.createChild("login").setAction(act).build().setSerializable(false);
-			else anode.setAction(act);
-		}
-		
-		
 	}
 	
 	private void setBasicActions() {
@@ -69,16 +55,21 @@ public class AdvantechConn {
 		Node anode = node.getChild("remove");
         if (anode == null) node.createChild("remove").setAction(act).build().setSerializable(false);
         else anode.setAction(act);
-        
-        act = new Action(Permission.READ, new UpdateIntervalHandler());
-        act.addParameter(new Parameter("Polling interval", ValueType.NUMBER, node.getAttribute("Polling interval")));
-        anode = node.getChild("edit polling interval");
-        if (anode == null) node.createChild("edit polling interval").setAction(act).build().setSerializable(false);
-        else anode.setAction(act);
+
+        act = new Action(Permission.READ, new LoginHandler());
+		act.addParameter(new Parameter("IP", ValueType.STRING, node.getAttribute("IP")));
+		act.addParameter(new Parameter("Username", ValueType.STRING, node.getAttribute("Username")));
+		act.addParameter(new Parameter("Password", ValueType.STRING, node.getAttribute("Password")).setEditorType(EditorType.PASSWORD));
+		act.addParameter(new Parameter("Polling interval", ValueType.NUMBER, node.getAttribute("Polling interval")));
+		anode = node.getChild("edit");
+		if (anode == null) node.createChild("edit").setAction(act).build().setSerializable(false);
+		else anode.setAction(act);
 		
 	}
 
 	void login() {
+		statNode.setValue(new Value("Logging in"));
+		clear();
 		auth = Utils.encodeAuth(node.getAttribute("Username").getString(), node.getAttribute("Password").getString());
 		Map<String, String> pars = new HashMap<String, String>();
 		pars.put("HostIp", node.getAttribute("IP").getString());
@@ -103,6 +94,14 @@ public class AdvantechConn {
 		}
 	}
 	
+	private void clear() {
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			if (!(child == statNode) && child.getAction() == null) node.removeChild(child);
+		}
+		
+	}
+
 	private class LoginHandler implements Handler<ActionResult> {
 		public void handle(ActionResult event) {
 			String ip = event.getParameter("IP", ValueType.STRING).getString();
@@ -110,27 +109,30 @@ public class AdvantechConn {
 			String pass = event.getParameter("Password", new Value("")).getString();
 			double interv = event.getParameter("Polling interval", ValueType.NUMBER).getNumber().doubleValue();
 			
-			node.setAttribute("IP", new Value(ip));
-			node.setAttribute("Username", new Value(user));
-			node.setAttribute("Password", new Value(pass));
-			node.setAttribute("Polling interval", new Value(interv));
+			if (new Value(ip).equals(node.getAttribute("IP")) && 
+			new Value(user).equals(node.getAttribute("Username")) &&
+			new Value(pass).equals(node.getAttribute("Password"))) {
+				
+				node.setAttribute("Polling interval", new Value(interv));
+				setBasicActions();
+				Set<AdvantechProject> projs = new HashSet<AdvantechProject>(link.futures.keySet());
+				for (AdvantechProject proj: projs) {
+					proj.stopPoll();
+					if (!proj.subscribed.isEmpty()) proj.startPoll();
+				}
+				
+			} else {
 			
-			init();
-		}
-	}
-	
-	private class UpdateIntervalHandler implements Handler<ActionResult> {
-		public void handle(ActionResult event) {
-			double interval = event.getParameter("Polling interval", ValueType.NUMBER).getNumber().doubleValue();
-			node.setAttribute("Polling interval", new Value(interval));
-			setBasicActions();
-			Set<AdvantechProject> projs = new HashSet<AdvantechProject>(link.futures.keySet());
-			for (AdvantechProject proj: projs) {
-				proj.stopPoll();
-				if (!proj.subscribed.isEmpty()) proj.startPoll();
+				node.setAttribute("IP", new Value(ip));
+				node.setAttribute("Username", new Value(user));
+				node.setAttribute("Password", new Value(pass));
+				node.setAttribute("Polling interval", new Value(interv));
+				
+				init();
 			}
 		}
 	}
+	
 	
 	private class RemoveHandler implements Handler<ActionResult> {
 		public void handle(ActionResult event) {
