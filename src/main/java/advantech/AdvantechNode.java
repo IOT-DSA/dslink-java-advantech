@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
+import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
@@ -28,6 +29,15 @@ public class AdvantechNode {
 		this.name = (String) json.get("NodeName");
 		this.node = project.node.createChild(name).build();
 		node.setAttribute("Description", new Value((String) json.get("Description")));
+		
+		node.getListener().setOnListHandler(new Handler<Node>() {
+			private boolean done = false;
+			public void handle(Node event) {
+				if (done) return;
+				done = true;
+				init();
+			}
+		});
 	}
 	
 	void init() {
@@ -80,7 +90,7 @@ public class AdvantechNode {
 				JsonArray ports = (JsonArray) Json.decodeMap(response).get("Ports");
 				for (Object o: ports) {
 					AdvantechPort ap = new AdvantechPort(this, (JsonObject) o);
-					ap.init();
+					//ap.init();
 				}
 			}
 		} catch (ApiException e) {

@@ -52,7 +52,7 @@ public class AdvantechLink {
 				child.clearChildren();
 				AdvantechConn ac = new AdvantechConn(getMe(), child);
 				ac.init();
-			} else if (child.getAction() == null) {
+			} else if (!child.getName().equals("defs") && child.getAction() == null) {
 				node.removeChild(child);
 			}
 		}
@@ -80,12 +80,12 @@ public class AdvantechLink {
 	void setupTag(final AdvantechTag at) {
 		at.node.getListener().setOnSubscribeHandler(new Handler<Node>() {
 			public void handle(final Node event) {
-				at.device.port.scada.project.subscribe(at);
+				at.project.subscribe(at);
 			}
 		});
 		at.node.getListener().setOnUnsubscribeHandler(new Handler<Node>() {
 			public void handle(final Node event) {
-				at.device.port.scada.project.unsubscribe(at);
+				at.project.unsubscribe(at);
 			}
 		});
 	}

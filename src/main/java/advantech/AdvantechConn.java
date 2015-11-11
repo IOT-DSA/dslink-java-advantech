@@ -81,7 +81,7 @@ public class AdvantechConn {
 				JsonArray projs = (JsonArray) Json.decodeMap(response).get("Projects");
 				for (Object o: projs) {
 					AdvantechProject ap = new AdvantechProject(this, (JsonObject) o);
-					ap.init();
+					//ap.init();
 				}
 			} else {
 				loggedIn = false;

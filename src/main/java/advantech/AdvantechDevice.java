@@ -5,8 +5,8 @@ import java.util.Map;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
+import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.Json;
-import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,15 @@ public class AdvantechDevice {
 		node.setAttribute("PortNumber", new Value((Number) json.get("PortNumber")));
 		node.setAttribute("Description", new Value((String) json.get("Description")));
 		node.setAttribute("UnitNumber", new Value((Number) json.get("UnitNumber")));
+		
+		node.getListener().setOnListHandler(new Handler<Node>() {
+			private boolean done = false;
+			public void handle(Node event) {
+				if (done) return;
+				done = true;
+				init();
+			}
+		});
 	}
 	
 	void init() {
@@ -65,30 +74,30 @@ public class AdvantechDevice {
 			LOGGER.debug("", e);
 		}
 		
-		try {
-			String response = Utils.sendGet(Utils.DEVICE_TAG_LIST, pars, port.scada.project.conn.auth);
-			if (response != null) {
-				JsonArray tags = (JsonArray) Json.decodeMap(response).get("Tags");
-				JsonArray tagRequestList = new JsonArray();
-				for (Object o: tags) {
-					JsonObject tagReq = new JsonObject();
-					tagReq.put("Name", ((JsonObject) o).get("Name"));
-					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
-					tagRequestList.add(tagReq);
-				}
-				JsonObject req = new JsonObject();
-				req.put("Tags", tagRequestList);
-				response = Utils.sendPost(Utils.NODE_TAG_DETAIL, pars, port.scada.project.conn.auth, req.toString());
-				JsonArray tagDetail = (JsonArray) Json.decodeMap(response).get("Tags");
-				for (Object o: tagDetail) {
-					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
-					at.init();
-				}
-			}
-		} catch (ApiException e1) {
-			// TODO Auto-generated catch block
-			LOGGER.debug("", e1);
-		}
+//		try {
+//			String response = Utils.sendGet(Utils.DEVICE_TAG_LIST, pars, port.scada.project.conn.auth);
+//			if (response != null) {
+//				JsonArray tags = (JsonArray) Json.decodeMap(response).get("Tags");
+//				JsonArray tagRequestList = new JsonArray();
+//				for (Object o: tags) {
+//					JsonObject tagReq = new JsonObject();
+//					tagReq.put("Name", ((JsonObject) o).get("Name"));
+//					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
+//					tagRequestList.add(tagReq);
+//				}
+//				JsonObject req = new JsonObject();
+//				req.put("Tags", tagRequestList);
+//				response = Utils.sendPost(Utils.NODE_TAG_DETAIL, pars, port.scada.project.conn.auth, req.toString());
+//				JsonArray tagDetail = (JsonArray) Json.decodeMap(response).get("Tags");
+//				for (Object o: tagDetail) {
+//					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
+//					at.init();
+//				}
+//			}
+//		} catch (ApiException e1) {
+//			// TODO Auto-generated catch block
+//			LOGGER.debug("", e1);
+//		}
 	}
 
 }

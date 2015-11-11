@@ -1,8 +1,8 @@
 {
   "name": "dslink-java-advantech",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A dslink for advantech",
-  "license": "GNU GPL",
+  "license": "Apache",
   "main": "bin/dslink-java-advantech",
   "author": {
     "name": "Daniel Shapiro",
