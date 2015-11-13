@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.Permission;
@@ -31,6 +32,7 @@ public class AdvantechConn {
 	AdvantechLink link;
 	Node node;
 	String auth;
+	TimeZone timezone;
 	
 	final private Node statNode;
 	boolean loggedIn = false;
@@ -48,8 +50,27 @@ public class AdvantechConn {
 		
 		login();
 		
+		setTimeZone();
+		
 	}
 	
+	private void setTimeZone() {
+		Map<String, String> pars = new HashMap<String, String>();
+		pars.put("HostIp", node.getAttribute("IP").getString());
+		try {
+			String response = Utils.sendGet(Utils.SERVER_TIME, pars, auth);
+			String offset =  (String) Json.decodeMap(response).get("Offset");
+			if (!offset.startsWith("-") && !offset.startsWith("+")) offset = "+" + offset;
+			String[] offsplit = offset.split(":");
+			offset = "GMT" + offsplit[0] + ":" + offsplit[1];
+			timezone = TimeZone.getTimeZone(offset);
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			LOGGER.debug("", e);
+		}
+		
+	}
+
 	private void setBasicActions() {
 		Action act = new Action(Permission.READ, new RemoveHandler());
 		Node anode = node.getChild("remove");
@@ -80,7 +101,7 @@ public class AdvantechConn {
 				statNode.setValue(new Value("Logged in"));
 				JsonArray projs = (JsonArray) Json.decodeMap(response).get("Projects");
 				for (Object o: projs) {
-					AdvantechProject ap = new AdvantechProject(this, (JsonObject) o);
+					new AdvantechProject(this, (JsonObject) o);
 					//ap.init();
 				}
 			} else {

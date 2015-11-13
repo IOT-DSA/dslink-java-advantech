@@ -152,6 +152,10 @@ public class Utils {
 	}
 	
 	public static class ApiException extends Exception {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -4800502515609984212L;
 		int code = 0;
 		public ApiException(String message) {
 		    super(message);

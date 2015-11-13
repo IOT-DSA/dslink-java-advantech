@@ -19,7 +19,9 @@ import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
-import org.dsa.iot.historian.database.Database;
+import org.dsa.iot.historian.stats.GetHistory;
+import org.dsa.iot.historian.stats.interval.IntervalParser;
+import org.dsa.iot.historian.stats.rollup.Rollup;
 import org.dsa.iot.historian.utils.QueryData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +85,7 @@ public class AdvantechTag {
 		project.conn.link.setupTag(this);
 		if (node.getLink().getSubscriptionManager().hasValueSub(node)) project.subscribe(this);
 //		tryDataLog();
+		GetHistory.initAction(node, new Gh());
 	}
 	
 	static boolean isAnalog(String type) {
@@ -182,93 +185,90 @@ public class AdvantechTag {
 //		}
 //	}
 	
-	private class Db extends Database {
+	private class Gh extends GetHistory {
 
-		public Db() {
-			super(node.getName(), null);
+	public Gh() {
+		super(node, null);
+	}
+	
+	@Override
+	protected void query(long from,
+            long to,
+            Rollup.Type type,
+            IntervalParser parser,
+            CompleteHandler<QueryData> handler) {
+		
+				
+		JsonObject json = new JsonObject();
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		df.setTimeZone(project.conn.timezone);
+		
+		String intervType = "S";
+		long start, interval, intervalMillis;
+		int recs, rolltype;
+		
+		switch (type) {
+		case MIN: rolltype = 1;break;
+		case MAX: rolltype = 2;break;
+		case AVERAGE: rolltype = 3;break;
+		default: rolltype = 0;
 		}
-
-		@Override
-		public void write(String path, Value value, long ts) {
-			throw new UnsupportedOperationException();
-			
+		
+		if (parser != null) {
+			intervalMillis = parser.incrementTime();
+			recs = (int) ((to - from)/intervalMillis);
+			if (recs < 1) recs = 1;
+		} else {
+			recs = 10;
+			intervalMillis = (to - from)/recs;
 		}
-
-		@Override
-		public void query(String path, long from, long to, CompleteHandler<QueryData> handler) {
-			JsonObject json = new JsonObject();
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			json.put("StartTime", df.format(new Date(from)));
-			double interval;
-			String type;
-			long intervalSeconds = (to - from)/1000L;
-			if (intervalSeconds < 1000000L) {
-				interval = (double) intervalSeconds;
-				type = "S";
-			}
-			else {
-				double intervalMinutes = intervalSeconds/60.0;
-				if (intervalMinutes < 1000000) {
-					interval = intervalMinutes;
-					type = "M";
-				} else {
-					interval = intervalMinutes/60.0;
-					type = "H";
+		
+		if (rolltype == 0) {
+			recs += 1;
+			start = from - intervalMillis;
+		} else {
+			start = from;
+		}
+		
+		interval = intervalMillis/1000;
+		
+		json.put("StartTime", df.format(new Date(start)));
+		json.put("IntervalType", intervType);
+		json.put("Interval", interval);
+		json.put("Records", recs);
+		JsonObject tagObj = new JsonObject();
+		tagObj.put("Name", name);
+		tagObj.put("DataType", rolltype);
+		JsonArray jarr = new JsonArray();
+		jarr.add(tagObj);
+		json.put("Tags", jarr);
+		
+		Map<String, String> pars = new HashMap<String, String>();
+		pars.put("ProjectName", project.name);
+		pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+		
+		try {
+			LOGGER.debug("sending Data Log request: " + json.toString());
+			String response = Utils.sendPost(Utils.DATA_LOG, pars, project.conn.auth, json.toString());
+			if (response != null) {
+				LOGGER.debug("recieved Data Log response: " + response);
+				JsonArray logs = (JsonArray) Json.decodeMap(response).get("DataLog");
+				JsonArray vals = ((JsonObject) logs.get(0)).get("Values");
+				for (int i=0; i<vals.size(); i++) {
+					Object o = vals.get(i);
+					long ts = start + (intervalMillis*(i+1));
+					QueryData qd = new QueryData(new Value((String) o), ts);
+					handler.handle(qd);
 				}
 			}
-			json.put("IntervalType", type);
-			json.put("Interval", interval);
-			json.put("Records", true);
-			JsonObject tagObj = new JsonObject();
-			tagObj.put("Name", name);
-			tagObj.put("DataType", "0");
-			JsonArray jarr = new JsonArray();
-			jarr.add(tagObj);
-			json.put("Tags", jarr);
-			
-			Map<String, String> pars = new HashMap<String, String>();
-			pars.put("ProjectName", project.name);
-			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
-			
-			try {
-				String response = Utils.sendPost(Utils.DATA_LOG, pars, project.conn.auth, json.toString());
-				if (response != null) {
-					JsonArray logs = (JsonArray) Json.decodeMap(response).get("DataLog");
-					JsonArray vals = ((JsonObject) logs.get(0)).get("Values");
-				}
-			} catch (ApiException e) {
-				// TODO Auto-generated catch block
-				LOGGER.debug("", e);
-			}
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			LOGGER.debug("", e);
+		} finally {
+			handler.complete();
 		}
-
-		@Override
-		public QueryData queryFirst(String path) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public QueryData queryLast(String path) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void close() throws Exception {
-			throw new UnsupportedOperationException();
-			
-		}
-
-		@Override
-		protected void performConnect() throws Exception {
-			throw new UnsupportedOperationException();
-			
-		}
-
-		@Override
-		public void initExtensions(Node node) {
-			throw new UnsupportedOperationException();
-			
-		}
+		
+	}
 		
 	}
 	

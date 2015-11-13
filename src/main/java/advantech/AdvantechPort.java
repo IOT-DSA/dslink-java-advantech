@@ -86,7 +86,7 @@ public class AdvantechPort {
 			if (response != null) {
 				JsonArray devs = (JsonArray) Json.decodeMap(response).get("Devices");
 				for (Object o: devs) {
-					AdvantechDevice ad = new AdvantechDevice(this, (JsonObject) o);
+					new AdvantechDevice(this, (JsonObject) o);
 					//ad.init();
 				}
 			}

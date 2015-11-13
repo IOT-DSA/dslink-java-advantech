@@ -120,7 +120,7 @@ public class AdvantechProject {
 			if (response != null) {
 				JsonArray nodes = (JsonArray) Json.decodeMap(response).get("Nodes");
 				for (Object o: nodes) {
-					AdvantechNode an = new AdvantechNode(this, (JsonObject) o);
+					new AdvantechNode(this, (JsonObject) o);
 					//an.init();
 				}
 			}
