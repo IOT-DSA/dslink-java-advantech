@@ -54,7 +54,7 @@ public class AdvantechBlock {
 				JsonArray tagRequestList = new JsonArray();
 				for (Object o: tags) {
 					JsonObject tagReq = new JsonObject();
-					tagReq.put("Name", ((JsonObject) o).get("Name"));
+					tagReq.put("Name", ((JsonObject) o).get("TagName"));
 					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
 					tagRequestList.add(tagReq);
 				}
