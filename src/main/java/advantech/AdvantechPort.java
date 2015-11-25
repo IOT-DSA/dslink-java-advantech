@@ -21,6 +21,8 @@ public class AdvantechPort {
 	
 	AdvantechNode scada;
 	Node node;
+	final Map<String, AdvantechDevice> deviceList = new HashMap<String, AdvantechDevice>();
+	boolean loaded = false;
 	
 	AdvantechPort(AdvantechNode scada, JsonObject json) {
 		this.scada = scada;
@@ -85,7 +87,8 @@ public class AdvantechPort {
 			if (response != null) {
 				JsonArray devs = (JsonArray) new JsonObject(response).get("Devices");
 				for (Object o: devs) {
-					new AdvantechDevice(this, (JsonObject) o);
+					AdvantechDevice ad = new AdvantechDevice(this, (JsonObject) o);
+					deviceList.put(ad.name, ad);
 					//ad.init();
 				}
 			}
@@ -94,7 +97,7 @@ public class AdvantechPort {
 			LOGGER.debug("", e);
 		}
 		
-		
+		loaded = true;
 		
 	}
 

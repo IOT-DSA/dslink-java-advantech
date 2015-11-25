@@ -27,6 +27,7 @@ public class AdvantechProject {
 	AdvantechConn conn;
 	String name;
 	Node node;
+	final Map<String, AdvantechNode> scadaList = new HashMap<String, AdvantechNode>();
 	Map<String, AdvantechTag> subscribed = new ConcurrentHashMap<String, AdvantechTag>();
 	
 	AdvantechProject(AdvantechConn conn, JsonObject json) {
@@ -62,6 +63,21 @@ public class AdvantechProject {
 				node.setAttribute("TimeOut", new Value((Number) details.get("TimeOut")));
 				node.setAttribute("AccessSecurityCode", new Value((String) details.get("AccessSecurityCode")));
 				node.setAttribute("HTTPPort", new Value((Number) details.get("HTTPPort")));
+			}
+		} catch (ApiException e) {
+			// TODO Auto-generated catch block
+			LOGGER.debug("", e);
+		}
+		
+		try {
+			String response = Utils.sendGet(Utils.NODE_LIST, pars, conn.auth);
+			if (response != null) {
+				JsonArray nodes = (JsonArray) new JsonObject(response).get("Nodes");
+				for (Object o: nodes) {
+					AdvantechNode an = new AdvantechNode(this, (JsonObject) o);
+					scadaList.put(an.name, an);
+					//an.init();
+				}
 			}
 		} catch (ApiException e) {
 			// TODO Auto-generated catch block
@@ -113,20 +129,6 @@ public class AdvantechProject {
 			LOGGER.debug("", e1);
 		}
 		
-		
-		try {
-			String response = Utils.sendGet(Utils.NODE_LIST, pars, conn.auth);
-			if (response != null) {
-				JsonArray nodes = (JsonArray) new JsonObject(response).get("Nodes");
-				for (Object o: nodes) {
-					new AdvantechNode(this, (JsonObject) o);
-					//an.init();
-				}
-			}
-		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			LOGGER.debug("", e);
-		}
 	}
 	
 	void poll() {

@@ -22,6 +22,8 @@ public class AdvantechNode {
 	AdvantechProject project;
 	String name;
 	Node node;
+	final Map<String, AdvantechPort> portList = new HashMap<String, AdvantechPort>();
+	boolean loaded = false;
 	
 	AdvantechNode(AdvantechProject proj, JsonObject json) {
 		this.project = proj;
@@ -88,7 +90,8 @@ public class AdvantechNode {
 			if (response != null) {
 				JsonArray ports = (JsonArray) new JsonObject(response).get("Ports");
 				for (Object o: ports) {
-					new AdvantechPort(this, (JsonObject) o);
+					AdvantechPort ap = new AdvantechPort(this, (JsonObject) o);
+					portList.put(ap.node.getAttribute("PortNumber").getNumber().toString(), ap);
 					//ap.init();
 				}
 			}
@@ -96,6 +99,7 @@ public class AdvantechNode {
 			// TODO Auto-generated catch block
 			LOGGER.debug("", e);
 		}
+		loaded = true;
 	}
 	
 }

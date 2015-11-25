@@ -69,8 +69,8 @@ public class AdvantechTag {
 			}
 			vt = ValueType.makeEnum(enums);
 		} else vt = ValueType.STRING;
-		if (block != null) this.node = block.node.createChild(name).setValueType(vt).build();
-		else this.node = project.node.createChild(name).setValueType(vt).build();
+		Node parent = sort(json);
+		this.node = parent.createChild(name).setValueType(vt).build();
 		for (Entry<String, Object> entry: json) {
 			if (!entry.getKey().equals("NAME") && !entry.getKey().equals("Name")) {
 				node.setAttribute(entry.getKey(), new Value((String) entry.getValue()));
@@ -78,6 +78,28 @@ public class AdvantechTag {
 		}
 		node.getListener().setValueHandler(new SetHandler());
 		node.setWritable(Writable.WRITE);
+	}
+	
+	Node sort(JsonObject json) {
+		if (block != null) return block.node;
+		else {
+			String scadaName = json.get("NODE");
+			String portNum = json.get("COM");
+			String devName = json.get("DEVNM");
+			if (scadaName == null) return project.node;
+			AdvantechNode scada = project.scadaList.get(scadaName);
+			if (scada == null) return project.node;
+			if (portNum == null) return scada.node;
+			if (!scada.loaded) scada.node.getListener().postListUpdate();
+			AdvantechPort port = scada.portList.get(portNum);
+			if (port == null) return scada.node;
+			if (devName == null) return port.node;
+			if (!port.loaded) port.node.getListener().postListUpdate();
+			AdvantechDevice dev = port.deviceList.get(devName);
+			if (dev == null) return port.node;
+			return dev.node;
+			
+		}
 	}
 	
 	void init() {
