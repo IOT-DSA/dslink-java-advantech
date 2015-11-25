@@ -15,7 +15,6 @@ import org.dsa.iot.dslink.node.actions.Parameter;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -59,7 +58,7 @@ public class AdvantechConn {
 		pars.put("HostIp", node.getAttribute("IP").getString());
 		try {
 			String response = Utils.sendGet(Utils.SERVER_TIME, pars, auth);
-			String offset =  (String) Json.decodeMap(response).get("Offset");
+			String offset =  (String) new JsonObject(response).get("Offset");
 			if (!offset.startsWith("-") && !offset.startsWith("+")) offset = "+" + offset;
 			String[] offsplit = offset.split(":");
 			offset = "GMT" + offsplit[0] + ":" + offsplit[1];
@@ -99,7 +98,7 @@ public class AdvantechConn {
 			if (response != null) {
 				loggedIn = true;
 				statNode.setValue(new Value("Logged in"));
-				JsonArray projs = (JsonArray) Json.decodeMap(response).get("Projects");
+				JsonArray projs = (JsonArray) new JsonObject(response).get("Projects");
 				for (Object o: projs) {
 					new AdvantechProject(this, (JsonObject) o);
 					//ap.init();

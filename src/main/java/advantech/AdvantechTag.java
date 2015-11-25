@@ -16,7 +16,6 @@ import org.dsa.iot.dslink.node.value.ValuePair;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.handler.CompleteHandler;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.dsa.iot.historian.stats.GetHistory;
@@ -252,7 +251,7 @@ public class AdvantechTag {
 			String response = Utils.sendPost(Utils.DATA_LOG, pars, project.conn.auth, json.toString());
 			if (response != null) {
 				LOGGER.debug("recieved Data Log response: " + response);
-				JsonArray logs = (JsonArray) Json.decodeMap(response).get("DataLog");
+				JsonArray logs = (JsonArray) new JsonObject(response).get("DataLog");
 				JsonArray vals = ((JsonObject) logs.get(0)).get("Values");
 				for (int i=0; i<vals.size(); i++) {
 					Object o = vals.get(i);

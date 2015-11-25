@@ -6,7 +6,6 @@ import java.util.Map;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -48,7 +47,7 @@ public class AdvantechNode {
 		try {
 			String response = Utils.sendGet(Utils.NODE_DETAIL, pars, project.conn.auth);
 			if (response != null) {
-				JsonObject details = (JsonObject) Json.decodeMap(response).get("Node");
+				JsonObject details = (JsonObject) new JsonObject(response).get("Node");
 				node.setAttribute("ProjectId", new Value((Number) details.get("ProjectId")));
 				node.setAttribute("NodeId", new Value((Number) details.get("NodeId")));
 				node.setAttribute("Description", new Value((String) details.get("Description")));
@@ -87,7 +86,7 @@ public class AdvantechNode {
 		try {
 			String response = Utils.sendGet(Utils.PORT_LIST, pars, project.conn.auth);
 			if (response != null) {
-				JsonArray ports = (JsonArray) Json.decodeMap(response).get("Ports");
+				JsonArray ports = (JsonArray) new JsonObject(response).get("Ports");
 				for (Object o: ports) {
 					new AdvantechPort(this, (JsonObject) o);
 					//ap.init();

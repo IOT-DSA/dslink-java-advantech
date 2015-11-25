@@ -7,7 +7,6 @@ import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -50,7 +49,7 @@ public class AdvantechBlock {
 		try {
 			String response = Utils.sendGet(Utils.PROJ_BLOCK_DETAIL, pars, project.conn.auth);
 			if (response != null) {
-				JsonArray tags = (JsonArray) Json.decodeMap(response).get("Tags");
+				JsonArray tags = (JsonArray) new JsonObject(response).get("Tags");
 				JsonArray tagRequestList = new JsonArray();
 				for (Object o: tags) {
 					JsonObject tagReq = new JsonObject();
@@ -61,7 +60,7 @@ public class AdvantechBlock {
 				JsonObject req = new JsonObject();
 				req.put("Tags", tagRequestList);
 				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, project.conn.auth, req.toString());
-				JsonArray tagDetail = (JsonArray) Json.decodeMap(response).get("Tags");
+				JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
 				for (Object o: tagDetail) {
 					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
 					at.init();

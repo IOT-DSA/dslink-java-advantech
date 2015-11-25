@@ -11,7 +11,6 @@ import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.util.Objects;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -55,7 +54,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendGet(Utils.PROJ_DETAIL, pars, conn.auth);
 			if (response != null) {
-				JsonObject details = (JsonObject) Json.decodeMap(response).get("Project");
+				JsonObject details = (JsonObject) new JsonObject(response).get("Project");
 				node.setAttribute("Id", new Value((Number) details.get("Id")));
 				node.setAttribute("Description", new Value((String) details.get("Description")));
 				node.setAttribute("Ip", new Value((String) details.get("Ip")));
@@ -79,7 +78,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendPost(Utils.PROJ_TAG_LIST, pars, conn.auth, json.toString());
 			if (response != null) {
-				JsonArray tags = (JsonArray) Json.decodeMap(response).get("Tags");
+				JsonArray tags = (JsonArray) new JsonObject(response).get("Tags");
 				JsonArray tagRequestList = new JsonArray();
 				for (Object o: tags) {
 					JsonObject tagReq = new JsonObject();
@@ -90,7 +89,7 @@ public class AdvantechProject {
 				JsonObject req = new JsonObject();
 				req.put("Tags", tagRequestList);
 				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, conn.auth, req.toString());
-				JsonArray tagDetail = (JsonArray) Json.decodeMap(response).get("Tags");
+				JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
 				for (Object o: tagDetail) {
 					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
 					at.init();
@@ -104,7 +103,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendGet(Utils.PROJ_BLOCK_LIST, pars, conn.auth);
 			if (response != null) {
-				JsonArray blocks = (JsonArray) Json.decodeMap(response).get("Blocks");
+				JsonArray blocks = (JsonArray) new JsonObject(response).get("Blocks");
 				for (Object o: blocks) {
 					new AdvantechBlock(this, (JsonObject) o);
 				}
@@ -118,7 +117,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendGet(Utils.NODE_LIST, pars, conn.auth);
 			if (response != null) {
-				JsonArray nodes = (JsonArray) Json.decodeMap(response).get("Nodes");
+				JsonArray nodes = (JsonArray) new JsonObject(response).get("Nodes");
 				for (Object o: nodes) {
 					new AdvantechNode(this, (JsonObject) o);
 					//an.init();
@@ -154,7 +153,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendPost(Utils.TAG_VALUE, pars, conn.auth, json.toString());
 			if (response != null) {
-				JsonArray vals = (JsonArray) Json.decodeMap(response).get("Values");
+				JsonArray vals = (JsonArray) new JsonObject(response).get("Values");
 				for (Object o: vals) {
 					JsonObject jo = (JsonObject) o;
 					AdvantechTag tag = subCopy.get((String) jo.get("Name"));
@@ -176,7 +175,7 @@ public class AdvantechProject {
 		try {
 			String response = Utils.sendPost(Utils.TAG_VALUE_TEXT, pars, conn.auth, textjson.toString());
 			if (response != null) {
-				JsonArray vals = (JsonArray) Json.decodeMap(response).get("Values");
+				JsonArray vals = (JsonArray) new JsonObject(response).get("Values");
 				for (Object o: vals) {
 					JsonObject jo = (JsonObject) o;
 					AdvantechTag tag = subCopy.get((String) jo.get("Name"));

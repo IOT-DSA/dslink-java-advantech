@@ -6,7 +6,6 @@ import java.util.Map;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.util.handler.Handler;
-import org.dsa.iot.dslink.util.json.Json;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -50,7 +49,7 @@ public class AdvantechPort {
 		try {
 			String response = Utils.sendGet(Utils.PORT_DETAIL, pars, scada.project.conn.auth);
 			if (response != null) {
-				JsonObject details = (JsonObject) Json.decodeMap(response).get("Port");
+				JsonObject details = (JsonObject) new JsonObject(response).get("Port");
 				node.setAttribute("InterfaceName", new Value((String) details.get("InterfaceName")));
 				node.setAttribute("ComportNbr", new Value((Number) details.get("ComportNbr")));
 				node.setAttribute("Description", new Value((String) details.get("Description")));
@@ -84,7 +83,7 @@ public class AdvantechPort {
 		try {
 			String response = Utils.sendGet(Utils.DEVICE_LIST, pars, scada.project.conn.auth);
 			if (response != null) {
-				JsonArray devs = (JsonArray) Json.decodeMap(response).get("Devices");
+				JsonArray devs = (JsonArray) new JsonObject(response).get("Devices");
 				for (Object o: devs) {
 					new AdvantechDevice(this, (JsonObject) o);
 					//ad.init();
