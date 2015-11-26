@@ -48,6 +48,9 @@ public class Utils {
 	public static final String PROJ_BLOCK_DETAIL = "http://{HostIp}/WaWebService/Json/BlockDetail/{ProjectName}/{BlockName}";
 	public static final String DATA_LOG = "http://{HostIp}/WaWebService/Json//GetDataLog/{ProjectName}";
 	public static final String SERVER_TIME = "http://{HostIp}/WaWebService/Json/ServerTime";
+	public static final String ALARM_SUMMARY = "http://{HostIp}/WaWebService/Json/GetAlarmSummary/{ProjectName}/{Start}/{Count}";
+	public static final String ALARM_LOG = "http://{HostIp}/WaWebService/Json/GetAlarmLog/{ProjectName}/{NodeName}/{Start}/{Count}";
+	public static final String ACTION_LOG = "http://{HostIp}/WaWebService/Json/GetActionLog/{ProjectName}/{NodeName}/{Start}/{Count}";
 	
 	public static String sendGet(String urlString, Map<String, String> urlParams, String authString) throws ApiException {
 		urlString = getUrlString(urlString, urlParams);

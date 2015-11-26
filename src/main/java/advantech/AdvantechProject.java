@@ -8,7 +8,16 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.dsa.iot.dslink.node.Node;
+import org.dsa.iot.dslink.node.Permission;
+import org.dsa.iot.dslink.node.actions.Action;
+import org.dsa.iot.dslink.node.actions.ActionResult;
+import org.dsa.iot.dslink.node.actions.Parameter;
+import org.dsa.iot.dslink.node.actions.ResultType;
+import org.dsa.iot.dslink.node.actions.table.Row;
+import org.dsa.iot.dslink.node.actions.table.Table;
+import org.dsa.iot.dslink.node.actions.table.Table.Mode;
 import org.dsa.iot.dslink.node.value.Value;
+import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.Objects;
 import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.JsonArray;
@@ -129,6 +138,57 @@ public class AdvantechProject {
 			LOGGER.debug("", e1);
 		}
 		
+		Action act = new Action(Permission.READ, new AlarmSummaryHandler());
+		act.addParameter(new Parameter("Start", ValueType.NUMBER));
+		act.addParameter(new Parameter("Count", ValueType.NUMBER));
+		act.addResult(new Parameter("Name", ValueType.STRING));
+		act.addResult(new Parameter("Time", ValueType.STRING));
+		act.addResult(new Parameter("AlarmPriority", ValueType.NUMBER));
+		act.addResult(new Parameter("AckStatus", ValueType.NUMBER));
+		act.addResult(new Parameter("AlarmGroup", ValueType.NUMBER));
+		act.addResult(new Parameter("AlarmValue", ValueType.NUMBER));
+		act.addResult(new Parameter("AlarmLimit", ValueType.NUMBER));
+		act.addResult(new Parameter("AlarmType", ValueType.NUMBER));
+		act.addResult(new Parameter("NodeName", ValueType.STRING));
+		act.addResult(new Parameter("Locked", ValueType.NUMBER));
+		act.setResultType(ResultType.TABLE);
+		node.createChild("get alarm summary").setAction(act).build();
+	}
+	
+	private class AlarmSummaryHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("ProjectName", name);
+			pars.put("HostIp", conn.node.getAttribute("IP").getString());
+			pars.put("Start", event.getParameter("Start", ValueType.NUMBER).getNumber().toString());
+			pars.put("Count", event.getParameter("Count", ValueType.NUMBER).getNumber().toString());
+			
+			try {
+				String response = Utils.sendGet(Utils.ALARM_SUMMARY, pars, conn.auth);
+				if (response != null) {
+					JsonArray alarmTags = new JsonObject(response).get("AlarmTagList");
+					Table table = event.getTable();
+					table.setMode(Mode.APPEND);
+					for (Object o: alarmTags) {
+						JsonObject aTag = (JsonObject) o;
+						Value name = new Value((String)aTag.get("Name"));
+						Value time = new Value((String)aTag.get("Time"));
+						Value priority = new Value((Number)aTag.get("AlarmPriority"));
+						Value status = new Value((Number)aTag.get("AckStatus"));
+						Value group = new Value((Number)aTag.get("AlarmGroup"));
+						Value value = new Value((Number)aTag.get("AlarmValue"));
+						Value limit = new Value((Number)aTag.get("AlarmLimit"));
+						Value type = new Value((Number)aTag.get("AlarmType"));
+						Value nodename = new Value((String)aTag.get("NodeName"));
+						Value locked = new Value((Number)aTag.get("Locked"));
+						Row row = Row.make(name, time, priority, status, group, value, limit, type, nodename, locked);
+						table.addRow(row);
+					}
+				}
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
 	}
 	
 	void poll() {
@@ -163,6 +223,7 @@ public class AdvantechProject {
 					String type = tag.node.getAttribute("TYPE").getString();
 					if (AdvantechTag.isAnalog(type)) tag.node.setValue(new Value((Number) val));
 					else if (AdvantechTag.isDiscrete(type)) {
+//						tag.node.setValue(new Value((Integer) val));
 						int v = (Integer) val;
 						if (v >= 0 && v < tag.states.length) tag.node.setValue(new Value(tag.states[v]));
 					}

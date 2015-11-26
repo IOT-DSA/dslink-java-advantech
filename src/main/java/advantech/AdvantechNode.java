@@ -4,7 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.dsa.iot.dslink.node.Node;
+import org.dsa.iot.dslink.node.Permission;
+import org.dsa.iot.dslink.node.actions.Action;
+import org.dsa.iot.dslink.node.actions.ActionResult;
+import org.dsa.iot.dslink.node.actions.Parameter;
+import org.dsa.iot.dslink.node.actions.ResultType;
+import org.dsa.iot.dslink.node.actions.table.Row;
+import org.dsa.iot.dslink.node.actions.table.Table;
+import org.dsa.iot.dslink.node.actions.table.Table.Mode;
 import org.dsa.iot.dslink.node.value.Value;
+import org.dsa.iot.dslink.node.value.ValueType;
 import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
@@ -100,6 +109,92 @@ public class AdvantechNode {
 			LOGGER.debug("", e);
 		}
 		loaded = true;
+		
+		Action act = new Action(Permission.READ, new AlarmLogHandler());
+		act.addParameter(new Parameter("Start", ValueType.NUMBER));
+		act.addParameter(new Parameter("Count", ValueType.NUMBER));
+		act.addResult(new Parameter("Time", ValueType.STRING));
+		act.addResult(new Parameter("Priority", ValueType.STRING));
+		act.addResult(new Parameter("TagName", ValueType.STRING));
+		act.addResult(new Parameter("Description", ValueType.STRING));
+		act.addResult(new Parameter("Action", ValueType.STRING));
+		act.setResultType(ResultType.TABLE);
+		node.createChild("get alarm log").setAction(act).build();
+		
+		act = new Action(Permission.READ, new ActionLogHandler());
+		act.addParameter(new Parameter("Start", ValueType.NUMBER));
+		act.addParameter(new Parameter("Count", ValueType.NUMBER));
+		act.addResult(new Parameter("Time", ValueType.STRING));
+		act.addResult(new Parameter("Priority", ValueType.STRING));
+		act.addResult(new Parameter("TagName", ValueType.STRING));
+		act.addResult(new Parameter("Description", ValueType.STRING));
+		act.addResult(new Parameter("Action", ValueType.STRING));
+		act.setResultType(ResultType.TABLE);
+		node.createChild("get action log").setAction(act).build();
+	}
+	
+	private class AlarmLogHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+			pars.put("ProjectName", project.name);
+			pars.put("NodeName", name);
+			pars.put("Start", event.getParameter("Start", ValueType.NUMBER).getNumber().toString());
+			pars.put("Count", event.getParameter("Count", ValueType.NUMBER).getNumber().toString());
+			
+			try {
+				String response = Utils.sendGet(Utils.ALARM_LOG, pars, project.conn.auth);
+				if (response != null) {
+					JsonArray alarmLogs = new JsonObject(response).get("AlarmLogs");
+					Table table = event.getTable();
+					table.setMode(Mode.APPEND);
+					for (Object o: alarmLogs) {
+						JsonObject aLog = (JsonObject) o;
+						Value time = new Value((String)aLog.get("Time"));
+						Value priority = new Value((String)aLog.get("Priority"));
+						Value tagname = new Value((String)aLog.get("TagName"));
+						Value descr = new Value((String)aLog.get("Description"));
+						Value action = new Value((String)aLog.get("Action"));
+						Row row = Row.make(time, priority, tagname, descr, action);
+						table.addRow(row);
+					}
+				}
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
+	}
+	
+	private class ActionLogHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+			pars.put("ProjectName", project.name);
+			pars.put("NodeName", name);
+			pars.put("Start", event.getParameter("Start", ValueType.NUMBER).getNumber().toString());
+			pars.put("Count", event.getParameter("Count", ValueType.NUMBER).getNumber().toString());
+			
+			try {
+				String response = Utils.sendGet(Utils.ACTION_LOG, pars, project.conn.auth);
+				if (response != null) {
+					JsonArray actLogs = new JsonObject(response).get("ActionLogs");
+					Table table = event.getTable();
+					table.setMode(Mode.APPEND);
+					for (Object o: actLogs) {
+						JsonObject aLog = (JsonObject) o;
+						Value time = new Value((String)aLog.get("Time"));
+						Value priority = new Value((String)aLog.get("Priority"));
+						Value tagname = new Value((String)aLog.get("TagName"));
+						Value descr = new Value((String)aLog.get("Description"));
+						Value action = new Value((String)aLog.get("Action"));
+						Row row = Row.make(time, priority, tagname, descr, action);
+						table.addRow(row);
+					}
+				}
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
 	}
 	
 }
