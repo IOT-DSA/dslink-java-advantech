@@ -152,7 +152,35 @@ public class AdvantechProject {
 		act.addResult(new Parameter("NodeName", ValueType.STRING));
 		act.addResult(new Parameter("Locked", ValueType.NUMBER));
 		act.setResultType(ResultType.TABLE);
-		node.createChild("get alarm summary").setAction(act).build();
+		node.createChild("get alarm summary").setAction(act).build().setSerializable(false);
+		
+		act = new Action(Permission.READ, new AckAllHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
+	}
+	
+	private class AckAllHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			String ip = event.getParameter("IP Address", ValueType.STRING).getString();
+			String comp = event.getParameter("Computer", ValueType.STRING).getString();
+			String user = conn.node.getAttribute("Username").getString();
+			
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("ProjectName", name);
+			pars.put("HostIp", conn.node.getAttribute("IP").getString());
+			
+			JsonObject json = new JsonObject();
+			json.put("IpAddress", ip);
+			json.put("Computer", comp);
+			json.put("User", user);
+			
+			try {
+				Utils.sendPost(Utils.PROJ_ALARM_ACK_ALL, pars, conn.auth, json.toString());
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
 	}
 	
 	private class AlarmSummaryHandler implements Handler<ActionResult> {

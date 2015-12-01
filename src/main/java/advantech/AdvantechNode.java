@@ -119,7 +119,7 @@ public class AdvantechNode {
 		act.addResult(new Parameter("Description", ValueType.STRING));
 		act.addResult(new Parameter("Action", ValueType.STRING));
 		act.setResultType(ResultType.TABLE);
-		node.createChild("get alarm log").setAction(act).build();
+		node.createChild("get alarm log").setAction(act).build().setSerializable(false);
 		
 		act = new Action(Permission.READ, new ActionLogHandler());
 		act.addParameter(new Parameter("Start", ValueType.NUMBER));
@@ -130,7 +130,36 @@ public class AdvantechNode {
 		act.addResult(new Parameter("Description", ValueType.STRING));
 		act.addResult(new Parameter("Action", ValueType.STRING));
 		act.setResultType(ResultType.TABLE);
-		node.createChild("get action log").setAction(act).build();
+		node.createChild("get action log").setAction(act).build().setSerializable(false);
+		
+		act = new Action(Permission.READ, new AckAllHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
+	}
+	
+	private class AckAllHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			String ip = event.getParameter("IP Address", ValueType.STRING).getString();
+			String comp = event.getParameter("Computer", ValueType.STRING).getString();
+			String user = project.conn.node.getAttribute("Username").getString();
+			
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+			pars.put("ProjectName", project.name);
+			pars.put("NodeName", name);
+			
+			JsonObject json = new JsonObject();
+			json.put("IpAddress", ip);
+			json.put("Computer", comp);
+			json.put("User", user);
+			
+			try {
+				Utils.sendPost(Utils.NODE_ALARM_ACK_ALL, pars, project.conn.auth, json.toString());
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
 	}
 	
 	private class AlarmLogHandler implements Handler<ActionResult> {
