@@ -251,9 +251,9 @@ public class AdvantechProject {
 					String type = tag.node.getAttribute("TYPE").getString();
 					if (AdvantechTag.isAnalog(type)) tag.node.setValue(new Value((Number) val));
 					else if (AdvantechTag.isDiscrete(type)) {
-//						tag.node.setValue(new Value((Integer) val));
+						tag.node.setValue(new Value((Integer) val));
 						int v = (Integer) val;
-						if (v >= 0 && v < tag.states.length) tag.node.setValue(new Value(tag.states[v]));
+						if (v >= 0 && v < tag.states.length) tag.displayNode.setValue(new Value(tag.states[v]));
 					}
 					else tag.node.setValue(new Value(val.toString()));
 				}

@@ -37,6 +37,7 @@ public class AdvantechTag {
 	AdvantechProject project;
 	AdvantechBlock block;
 	Node node;
+	Node displayNode;
 	String name;
 	
 	final String[] states = new String[8];
@@ -58,16 +59,18 @@ public class AdvantechTag {
 		if (json.get("NAME") != null) this.name = (String) json.get("NAME");
 		else this.name = (String) json.get("Name");
 		ValueType vt;
+		ValueType dispvt = null;
 		String type = json.get("TYPE");
 		if (isAnalog(type)) vt = ValueType.NUMBER;
 		else if (isDiscrete(type)) {
+			vt = ValueType.NUMBER;
 			Set<String> enums = new HashSet<String>();
 			for (int i=0; i<states.length; i++) {
 				String s = json.get("DESCR"+i);
 				states[i] = s;
 				if (s != null) enums.add(s);
 			}
-			vt = ValueType.makeEnum(enums);
+			dispvt = ValueType.makeEnum(enums);
 		} else vt = ValueType.STRING;
 		Node parent = sort(json);
 		this.node = parent.createChild(name).setValueType(vt).build();
@@ -78,6 +81,11 @@ public class AdvantechTag {
 		}
 		node.getListener().setValueHandler(new SetHandler());
 		node.setWritable(Writable.WRITE);
+		if (isDiscrete(type)) {
+			this.displayNode = node.createChild("Display value").setValueType(dispvt).build();
+			displayNode.getListener().setValueHandler(new DisplaySetHandler());
+			displayNode.setWritable(Writable.WRITE);
+		}
 	}
 	
 	Node sort(JsonObject json) {
@@ -117,6 +125,36 @@ public class AdvantechTag {
 		return "DIGITAL".equals(type) || "ST".equals(type) || "TA".equals(type) || "D".equals(type);
 	}
 	
+	private class DisplaySetHandler implements Handler<ValuePair> {
+		public void handle(ValuePair event) {
+			if (!event.isFromExternalSource()) return;
+			
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("ProjectName", project.name);
+			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+			
+			JsonObject json = new JsonObject();
+			JsonArray jarr = new JsonArray();
+			JsonObject valobj = new JsonObject();
+			valobj.put("Name", name);
+			
+			int val = indexOfState(event.getCurrent().getString());
+			if (val < 0) {
+				LOGGER.debug("Invalid state for discrete value");
+				return;
+			}
+			valobj.put("Value", val);
+			jarr.add(valobj);
+			json.put("Tags", jarr);
+			try {
+				Utils.sendPost(Utils.SET_TAG_VALUE, pars, project.conn.auth, json.toString());
+			} catch (ApiException e) {
+				// TODO Auto-generated catch block
+				LOGGER.debug("", e);
+			}
+		}
+	}
+	
 	private class SetHandler implements Handler<ValuePair> {
 		public void handle(ValuePair event) {
 			if (!event.isFromExternalSource()) return;
@@ -141,7 +179,7 @@ public class AdvantechTag {
 					LOGGER.debug("", e);
 				}
 			} else if (isDiscrete(type)) {
-				int val = indexOfState(event.getCurrent().getString());
+				int val = event.getCurrent().getNumber().intValue();
 				if (val < 0) {
 					LOGGER.debug("Invalid state for discrete value");
 					return;
