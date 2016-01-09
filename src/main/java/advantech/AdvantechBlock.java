@@ -54,12 +54,14 @@ public class AdvantechBlock {
 				for (Object o: tags) {
 					JsonObject tagReq = new JsonObject();
 					tagReq.put("Name", ((JsonObject) o).get("TagName"));
-					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
+//					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
+					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"NAME\"},{\"Name\":\"DESCRP\"},{\"Name\":\"PADDRS\"},{\"Name\":\"NODE\"},{\"Name\":\"COM\"},{\"Name\":\"DEVNM\"},{\"Name\":\"TYPE\"},{\"Name\":\"DESCR0\"}, {\"Name\":\"DESCR1\"},{\"Name\":\"DESCR2\"},{\"Name\":\"DESCR3\"},{\"Name\":\"DESCR4\"},{\"Name\":\"DESCR5\"},{\"Name\":\"DESCR6\"},{\"Name\":\"DESCR7\"}]"));
 					tagRequestList.add(tagReq);
 				}
 				JsonObject req = new JsonObject();
 				req.put("Tags", tagRequestList);
 				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, project.conn.auth, req.toString());
+				LOGGER.debug("REQUEST:" + req.toString() + " | " + "RESPONSE: " + response);
 				JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
 				for (Object o: tagDetail) {
 					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
