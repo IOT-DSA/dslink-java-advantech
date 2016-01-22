@@ -1,7 +1,9 @@
 package advantech;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.Permission;
@@ -108,6 +110,20 @@ public class AdvantechNode {
 			// TODO Auto-generated catch block
 			LOGGER.debug("", e);
 		}
+		
+		try {
+			String response = Utils.sendGet(Utils.NODE_BLOCK_LIST, pars, project.conn.auth);
+			if (response != null) {
+				JsonArray blocks = (JsonArray) new JsonObject(response).get("Blocks");
+				handleBlocks(blocks);
+				//				for (Object o: blocks) {
+//					//new AdvantechBlock(this, (JsonObject) o);
+//				}
+			}
+		} catch (ApiException e) {
+			LOGGER.debug("", e);
+		}
+		
 		loaded = true;
 		
 		Action act = new Action(Permission.READ, new AlarmLogHandler());
@@ -136,6 +152,68 @@ public class AdvantechNode {
 		act.addParameter(new Parameter("IP Address", ValueType.STRING));
 		act.addParameter(new Parameter("Computer", ValueType.STRING));
 		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
+	
+		act = new Action(Permission.READ, new AckHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
+		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
+	}
+	
+	private void handleBlocks(JsonArray blocks) {
+		ArrayList<String> usedBlocks = new ArrayList<String>();
+		Map<String, String> pars = new HashMap<String, String>();
+		pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+		pars.put("ProjectName", project.name);
+		pars.put("NodeName", name);
+		
+		if (!loaded) node.getListener().postListUpdate();
+		for (Entry<String, AdvantechPort> entry: portList.entrySet()) {
+			String portName = entry.getKey();
+			AdvantechPort ap = entry.getValue();
+			pars.put("Comport", portName);
+			String response = null;
+			try {
+				response = Utils.sendGet(Utils.PORT_BLOCK_LIST, pars, project.conn.auth);
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+			JsonArray portBlocks = (response != null) ? (JsonArray) new JsonObject(response).get("Blocks") : new JsonArray();
+			if (!ap.loaded) ap.node.getListener().postListUpdate();
+			for (Entry<String, AdvantechDevice> dentry: ap.deviceList.entrySet()) {
+				String devName = dentry.getKey();
+				AdvantechDevice ad = dentry.getValue();
+				pars.put("DeviceName", devName);
+				String dresponse = null;
+				try {
+					dresponse = Utils.sendGet(Utils.DEVICE_BLOCK_LIST, pars, project.conn.auth);
+				} catch (ApiException e) {
+					LOGGER.debug("", e);
+				}
+				JsonArray devBlocks = (dresponse != null) ? (JsonArray) new JsonObject(response).get("Blocks") : new JsonArray();
+				
+				for (Object o: devBlocks) {
+					JsonObject jo = (JsonObject) o;
+					usedBlocks.add((String) jo.get("Name"));
+					new AdvantechBlock(this, jo, ad.node);
+				}
+			}
+			for (Object o: portBlocks) {
+				JsonObject jo = (JsonObject) o;
+				String n = jo.get("Name");
+				if (!usedBlocks.contains(n)) {
+					usedBlocks.add(n);
+					new AdvantechBlock(this, jo, ap.node);
+				}
+			}
+		}
+		for (Object o: blocks) {
+			JsonObject jo = (JsonObject) o;
+			String n = jo.get("Name");
+			if (!usedBlocks.contains(n)) {
+				new AdvantechBlock(this, jo, node);
+			}
+		}
 	}
 	
 	private class AckAllHandler implements Handler<ActionResult> {
@@ -156,6 +234,32 @@ public class AdvantechNode {
 			
 			try {
 				Utils.sendPost(Utils.NODE_ALARM_ACK_ALL, pars, project.conn.auth, json.toString());
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
+	}
+	
+	private class AckHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("ProjectName", project.name);
+			pars.put("NodeName", name);
+			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
+			
+			String ip = event.getParameter("IP Address", ValueType.STRING).getString();
+			String comp = event.getParameter("Computer", ValueType.STRING).getString();
+			String user = project.conn.node.getAttribute("Username").getString();
+			JsonArray tags = event.getParameter("Tag Names", ValueType.ARRAY).getArray();
+			
+			JsonObject json = new JsonObject();
+			json.put("IpAddress", ip);
+			json.put("Computer", comp);
+			json.put("User", user);
+			json.put("Tags", tags);
+			
+			try {
+				Utils.sendPost(Utils.NODE_ALARM_ACK, pars, project.conn.auth, json.toString());
 			} catch (ApiException e) {
 				LOGGER.debug("", e);
 			}

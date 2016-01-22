@@ -6,7 +6,6 @@ import java.util.Map;
 import org.dsa.iot.dslink.node.Node;
 import org.dsa.iot.dslink.node.value.Value;
 import org.dsa.iot.dslink.node.value.ValueType;
-import org.dsa.iot.dslink.util.handler.Handler;
 import org.dsa.iot.dslink.util.json.JsonArray;
 import org.dsa.iot.dslink.util.json.JsonObject;
 import org.slf4j.Logger;
@@ -20,35 +19,39 @@ public class AdvantechBlock {
         LOGGER = LoggerFactory.getLogger(AdvantechBlock.class);
     }
 	
-	AdvantechProject project;
+	AdvantechNode scada;
 	String name;
 	Node node;
 	
-	AdvantechBlock(AdvantechProject project, JsonObject json) {
-		this.project = project;
+	AdvantechBlock(AdvantechNode scada, JsonObject json, Node parentNode) {
+		this.scada = scada;
 		this.name = (String) json.get("Name");
-		this.node = project.node.createChild(name).setValueType(ValueType.NUMBER).setValue(new Value((Number) json.get("ID"))).build();
 		
-		node.getListener().setOnListHandler(new Handler<Node>() {
-			private boolean done = false;
-			public void handle(Node event) {
-				if (done) return;
-				done = true;
-				init();
-			}
-		});
+		this.node = parentNode.createChild(name).setValueType(ValueType.NUMBER).setValue(new Value((Number) json.get("ID"))).build();
+		init();
+		
+//		node.getListener().setOnListHandler(new Handler<Node>() {
+//			private boolean done = false;
+//			public void handle(Node event) {
+//				if (done) return;
+//				done = true;
+//				init();
+//			}
+//		});
 	}
 	
 	void init() {
 		
 		Map<String, String> pars = new HashMap<String, String>();
-		pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
-		pars.put("ProjectName", project.name);
+		pars.put("HostIp", scada.project.conn.node.getAttribute("IP").getString());
+		pars.put("ProjectName", scada.project.name);
+		pars.put("NodeName", scada.name);
 		pars.put("BlockName", name);
 		
 		try {
-			String response = Utils.sendGet(Utils.PROJ_BLOCK_DETAIL, pars, project.conn.auth);
+			String response = Utils.sendGet(Utils.NODE_BLOCK_DETAIL, pars, scada.project.conn.auth);
 			if (response != null) {
+//				LOGGER.info("BLOCKDETAIL: " + response);
 				JsonArray tags = (JsonArray) new JsonObject(response).get("Tags");
 				JsonArray tagRequestList = new JsonArray();
 				for (Object o: tags) {
@@ -60,7 +63,7 @@ public class AdvantechBlock {
 				}
 				JsonObject req = new JsonObject();
 				req.put("Tags", tagRequestList);
-				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, project.conn.auth, req.toString());
+				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, scada.project.conn.auth, req.toString());
 				LOGGER.debug("REQUEST:" + req.toString() + " | " + "RESPONSE: " + response);
 				JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
 				for (Object o: tagDetail) {

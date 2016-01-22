@@ -125,18 +125,18 @@ public class AdvantechProject {
 			LOGGER.debug("", e1);
 		}
 		
-		try {
-			String response = Utils.sendGet(Utils.PROJ_BLOCK_LIST, pars, conn.auth);
-			if (response != null) {
-				JsonArray blocks = (JsonArray) new JsonObject(response).get("Blocks");
-				for (Object o: blocks) {
-					new AdvantechBlock(this, (JsonObject) o);
-				}
-			}
-		} catch (ApiException e1) {
-			// TODO Auto-generated catch block
-			LOGGER.debug("", e1);
-		}
+//		try {
+//			String response = Utils.sendGet(Utils.PROJ_BLOCK_LIST, pars, conn.auth);
+//			if (response != null) {
+//				JsonArray blocks = (JsonArray) new JsonObject(response).get("Blocks");
+//				for (Object o: blocks) {
+//					new AdvantechBlock(this, (JsonObject) o);
+//				}
+//			}
+//		} catch (ApiException e1) {
+//			// TODO Auto-generated catch block
+//			LOGGER.debug("", e1);
+//		}
 		
 		Action act = new Action(Permission.READ, new AlarmSummaryHandler());
 		act.addParameter(new Parameter("Start", ValueType.NUMBER));
@@ -158,6 +158,12 @@ public class AdvantechProject {
 		act.addParameter(new Parameter("IP Address", ValueType.STRING));
 		act.addParameter(new Parameter("Computer", ValueType.STRING));
 		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
+	
+		act = new Action(Permission.READ, new AckHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
+		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
 	}
 	
 	private class AckAllHandler implements Handler<ActionResult> {
@@ -177,6 +183,31 @@ public class AdvantechProject {
 			
 			try {
 				Utils.sendPost(Utils.PROJ_ALARM_ACK_ALL, pars, conn.auth, json.toString());
+			} catch (ApiException e) {
+				LOGGER.debug("", e);
+			}
+		}
+	}
+	
+	private class AckHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			Map<String, String> pars = new HashMap<String, String>();
+			pars.put("ProjectName", name);
+			pars.put("HostIp", conn.node.getAttribute("IP").getString());
+			
+			String ip = event.getParameter("IP Address", ValueType.STRING).getString();
+			String comp = event.getParameter("Computer", ValueType.STRING).getString();
+			String user = conn.node.getAttribute("Username").getString();
+			JsonArray tags = event.getParameter("Tag Names", ValueType.ARRAY).getArray();
+			
+			JsonObject json = new JsonObject();
+			json.put("IpAddress", ip);
+			json.put("Computer", comp);
+			json.put("User", user);
+			json.put("Tags", tags);
+			
+			try {
+				Utils.sendPost(Utils.PROJ_ALARM_ACK, pars, conn.auth, json.toString());
 			} catch (ApiException e) {
 				LOGGER.debug("", e);
 			}

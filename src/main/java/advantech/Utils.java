@@ -46,6 +46,10 @@ public class Utils {
 	public static final String SET_TAG_VAUE_TEXT = "http://{HostIp}/WaWebService/Json/SetTagValueText/{ProjectName}";
 	public static final String PROJ_BLOCK_LIST = "http://{HostIp}/WaWebService/Json/BlockList/{ProjectName}";
 	public static final String PROJ_BLOCK_DETAIL = "http://{HostIp}/WaWebService/Json/BlockDetail/{ProjectName}/{BlockName}";
+	public static final String NODE_BLOCK_LIST = "http://{HostIp}/WaWebService/Json/BlockList/{ProjectName}/{NodeName}";
+	public static final String NODE_BLOCK_DETAIL = "http://{HostIp}/WaWebService/Json/BlockDetail/{ProjectName}/{NodeName}/{BlockName}";
+	public static final String PORT_BLOCK_LIST = "http://{HostIp}/WaWebService/Json/BlockList/{ProjectName}/{NodeName}/{Comport}";
+	public static final String DEVICE_BLOCK_LIST = "http://{HostIp}/WaWebService/Json/BlockList/{ProjectName}/{NodeName}/{Comport}/{DeviceName}";
 	public static final String DATA_LOG = "http://{HostIp}/WaWebService/Json//GetDataLog/{ProjectName}";
 	public static final String SERVER_TIME = "http://{HostIp}/WaWebService/Json/ServerTime";
 	public static final String ALARM_SUMMARY = "http://{HostIp}/WaWebService/Json/GetAlarmSummary/{ProjectName}/{Start}/{Count}";
@@ -53,6 +57,8 @@ public class Utils {
 	public static final String ACTION_LOG = "http://{HostIp}/WaWebService/Json/GetActionLog/{ProjectName}/{NodeName}/{Start}/{Count}";
 	public static final String PROJ_ALARM_ACK_ALL = "http://{HostIp}/WaWebService/Json/AlarmAckAll/{ProjectName}";
 	public static final String NODE_ALARM_ACK_ALL = "http://{HostIp}/WaWebService/Json/AlarmAckAll/{ProjectName}/{NodeName}";
+	public static final String PROJ_ALARM_ACK = "http://{HostIp}/WaWebService/Json/AlarmAck/{ProjectName}";
+	public static final String NODE_ALARM_ACK = "http://{HostIp}/WaWebService/Json/AlarmAck/{ProjectName}/{NodeName}";
 	
 	public static String sendGet(String urlString, Map<String, String> urlParams, String authString) throws ApiException {
 		urlString = getUrlString(urlString, urlParams);

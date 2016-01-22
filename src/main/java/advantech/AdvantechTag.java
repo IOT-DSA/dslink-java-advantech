@@ -51,7 +51,7 @@ public class AdvantechTag {
 	
 	AdvantechTag(AdvantechBlock block, JsonObject json) {
 		this.block = block;
-		this.project = block.project;
+		this.project = block.scada.project;
 		setup(json);
 	}
 	
