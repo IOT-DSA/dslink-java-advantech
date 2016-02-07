@@ -105,20 +105,20 @@ public class AdvantechProject {
 			if (response != null) {
 				JsonArray tags = (JsonArray) new JsonObject(response).get("Tags");
 				JsonArray tagRequestList = new JsonArray();
+				int tagCount = 0;
 				for (Object o: tags) {
 					JsonObject tagReq = new JsonObject();
 					tagReq.put("Name", ((JsonObject) o).get("Name"));
 					tagReq.put("Attributes", new JsonArray("[{\"Name\":\"ALL\"}]"));
 					tagRequestList.add(tagReq);
+					tagCount ++;
+					if (tagCount >= 500) {
+						getTagDetails(tagRequestList, pars);
+						tagRequestList = new JsonArray();
+						tagCount = 0;
+					}
 				}
-				JsonObject req = new JsonObject();
-				req.put("Tags", tagRequestList);
-				response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, conn.auth, req.toString());
-				JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
-				for (Object o: tagDetail) {
-					AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
-					at.init();
-				}
+				if (tagCount > 0) getTagDetails(tagRequestList, pars);
 			}
 		} catch (ApiException e1) {
 			// TODO Auto-generated catch block
@@ -164,6 +164,21 @@ public class AdvantechProject {
 		act.addParameter(new Parameter("Computer", ValueType.STRING));
 		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
 		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
+	}
+	
+	private void getTagDetails(JsonArray tagRequestList, Map<String, String> pars) {
+		JsonObject req = new JsonObject();
+		req.put("Tags", tagRequestList);
+		try {
+			String response = Utils.sendPost(Utils.PROJ_TAG_DETAIL, pars, conn.auth, req.toString());
+			JsonArray tagDetail = (JsonArray) new JsonObject(response).get("Tags");
+			for (Object o: tagDetail) {
+				AdvantechTag at = new AdvantechTag(this, (JsonObject) o);
+				at.init();
+			}
+		} catch (ApiException e) {
+			LOGGER.debug("", e);
+		}
 	}
 	
 	private class AckAllHandler implements Handler<ActionResult> {
