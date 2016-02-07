@@ -38,6 +38,9 @@
     "handler_class": {
       "type": "string",
       "default": "advantech.Main"
+    },
+    "token": {
+      "type": "string"
     }
   }
 }
