@@ -15,8 +15,8 @@ repositories {
 }
  
 dependencies {
-    compile 'org.iot-dsa:dslink:0.13.0'
-    compile 'org.iot-dsa:historian:0.13.0'
+    compile 'org.iot-dsa:dslink:0.14.0'
+    compile 'org.iot-dsa:historian:0.14.0'
     compile 'commons-codec:commons-codec:1.10'
 
 }
