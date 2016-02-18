@@ -214,12 +214,18 @@ public class AdvantechProject {
 			String comp = event.getParameter("Computer", ValueType.STRING).getString();
 			String user = conn.node.getAttribute("Username").getString();
 			JsonArray tags = event.getParameter("Tag Names", ValueType.ARRAY).getArray();
+			JsonArray tagsWrapped = new JsonArray();
+			for (Object o: tags) {
+				JsonObject jo = new JsonObject();
+				jo.put("Name", o);
+				tagsWrapped.add(jo);
+			}
 			
 			JsonObject json = new JsonObject();
 			json.put("IpAddress", ip);
 			json.put("Computer", comp);
 			json.put("User", user);
-			json.put("Tags", tags);
+			json.put("Tags", tagsWrapped);
 			
 			try {
 				Utils.sendPost(Utils.PROJ_ALARM_ACK, pars, conn.auth, json.toString());
