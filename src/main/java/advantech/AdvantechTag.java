@@ -49,10 +49,30 @@ public class AdvantechTag {
 		setup(json);
 	}
 	
+	AdvantechTag(AdvantechProject project, Node node) {
+		this.project = project;
+		this.block = null;
+		this.node = node;
+		this.name = node.getName();
+		this.displayNode = node.getChild("Display value");
+		setListeners();
+		
+	}
+	
 	AdvantechTag(AdvantechBlock block, JsonObject json) {
 		this.block = block;
 		this.project = block.scada.project;
 		setup(json);
+	}
+	
+	AdvantechTag(AdvantechBlock block, Node node) {
+		this.block = block;
+		this.project = block.scada.project;
+		this.node = node;
+		this.name = node.getName();
+		this.displayNode = node.getChild("Display value");
+		setListeners();
+		
 	}
 	
 	private void setup(JsonObject json) {
@@ -74,6 +94,8 @@ public class AdvantechTag {
 		} else vt = ValueType.STRING;
 		Node parent = sort(json);
 		this.node = parent.createChild(name).setValueType(vt).build();
+		node.setAttribute("_dstype", new Value("tag"));
+		node.setAttribute("_json", new Value(json.toString()));
 		for (Entry<String, Object> entry: json) {
 			if (!entry.getKey().equals("NAME") && !entry.getKey().equals("Name")) {
 				node.setAttribute(entry.getKey(), new Value((String) entry.getValue()));
@@ -87,6 +109,16 @@ public class AdvantechTag {
 			displayNode.setWritable(Writable.WRITE);
 		}
 	}
+	
+	private void setListeners() {
+		node.getListener().setValueHandler(new SetHandler());
+		node.setWritable(Writable.WRITE);
+		if (displayNode != null) {
+			displayNode.getListener().setValueHandler(new DisplaySetHandler());
+			displayNode.setWritable(Writable.WRITE);
+		}
+	}
+	
 	
 	Node sort(JsonObject json) {
 		if (block != null) return block.node;

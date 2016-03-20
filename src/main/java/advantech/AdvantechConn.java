@@ -89,7 +89,7 @@ public class AdvantechConn {
 
 	void login() {
 		statNode.setValue(new Value("Logging in"));
-		clear();
+		//clear();
 		auth = Utils.encodeAuth(node.getAttribute("Username").getString(), node.getAttribute("Password").getString());
 		Map<String, String> pars = new HashMap<String, String>();
 		pars.put("HostIp", node.getAttribute("IP").getString());
@@ -100,7 +100,17 @@ public class AdvantechConn {
 				statNode.setValue(new Value("Logged in"));
 				JsonArray projs = (JsonArray) new JsonObject(response).get("Projects");
 				for (Object o: projs) {
-					new AdvantechProject(this, (JsonObject) o);
+					Node pn = node.getChild((String) ((JsonObject) o).get("Name"));
+					if (pn != null && pn.getAttribute("_dstype") == null) {
+						node.removeChild(pn);
+						pn = null;
+					}
+					if (pn == null) {
+						AdvantechProject ap = new AdvantechProject(this, (JsonObject) o);
+						ap.node.setAttribute("new", new Value(true));
+					} else {
+						pn.removeAttribute("new");
+					}
 					//ap.init();
 				}
 			} else {
@@ -163,6 +173,19 @@ public class AdvantechConn {
 	private void remove() {
 		node.clearChildren();
 		node.getParent().removeChild(node);
+	}
+	
+	void restoreLastSession() {
+		init();
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			Value isnew = child.getAttribute("new");
+			Value dstype = child.getAttribute("_dstype");
+			if (dstype != null && dstype.getString().equals("project") && isnew == null && child.getAction() == null) {
+				new AdvantechProject(this, child);
+			}
+		}
+		
 	}
 
 }

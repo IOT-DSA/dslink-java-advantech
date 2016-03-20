@@ -49,9 +49,10 @@ public class AdvantechLink {
 			Value pass = child.getAttribute("Password");
 			Value interv = child.getAttribute("Polling interval");
 			if (ip!=null && user!=null && pass!=null && interv!=null) {
-				child.clearChildren();
+				//child.clearChildren();
 				AdvantechConn ac = new AdvantechConn(getMe(), child);
-				ac.init();
+				ac.restoreLastSession();
+				//ac.init();
 			} else if (!child.getName().equals("defs") && child.getAction() == null) {
 				node.removeChild(child);
 			}

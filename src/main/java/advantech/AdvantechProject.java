@@ -43,6 +43,7 @@ public class AdvantechProject {
 		this.conn = conn;
 		this.name = (String) json.get("Name");
 		this.node = conn.node.createChild(name).build();
+		node.setAttribute("_dstype", new Value("project"));
 		node.setAttribute("Id", new Value((Number) json.get("Id")));
 		node.setAttribute("Description", new Value((String) json.get("Description")));
 		
@@ -51,13 +52,42 @@ public class AdvantechProject {
 			public void handle(Node event) {
 				if (done) return;
 				done = true;
+				refresh();
 				init();
 			}
 		});
 		
 	}
 	
-	void init() {
+	AdvantechProject(AdvantechConn conn, Node node) {
+		this.conn = conn;
+		this.node = node;
+		this.name = node.getName();
+		restoreLastSession();
+	}
+	
+	private void restoreLastSession() {
+		init();
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			Value dstype = child.getAttribute("_dstype");
+			if (dstype == null) {
+				node.removeChild(child);
+			} else if (dstype.getString().equals("node")) {
+				AdvantechNode an = new AdvantechNode(this, child);
+				scadaList.put(an.name, an);
+			} else if (dstype.getString().equals("tag") && child.getAttribute("_json") != null) {
+				//String jstring = child.getAttribute("_json").getString();
+				AdvantechTag at = new AdvantechTag(this, child);
+				at.init();
+			} else if (child.getAction() == null) {
+				node.removeChild(child);
+			}
+		}
+		
+	}
+
+	void refresh() {
 		Map<String, String> pars = new HashMap<String, String>();
 		pars.put("ProjectName", name);
 		pars.put("HostIp", conn.node.getAttribute("IP").getString());
@@ -137,6 +167,9 @@ public class AdvantechProject {
 //			// TODO Auto-generated catch block
 //			LOGGER.debug("", e1);
 //		}
+	}
+	
+	void init() {
 		
 		Action act = new Action(Permission.READ, new AlarmSummaryHandler());
 		act.addParameter(new Parameter("Start", ValueType.NUMBER));
@@ -338,7 +371,7 @@ public class AdvantechProject {
 		long interval = (long) (1000*conn.node.getAttribute("Polling interval").getNumber().doubleValue());
 		ScheduledFuture<?> fut = stpe.scheduleWithFixedDelay(new Runnable() {
 			public void run() {
-				LOGGER.debug("Polling for " + name);
+				LOGGER.info("Polling for " + name);
 				poll();
 			}
 		}, 0, interval, TimeUnit.MILLISECONDS);

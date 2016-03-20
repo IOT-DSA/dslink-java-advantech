@@ -40,6 +40,7 @@ public class AdvantechNode {
 		this.project = proj;
 		this.name = (String) json.get("NodeName");
 		this.node = project.node.createChild(name).build();
+		node.setAttribute("_dstype", new Value("node"));
 		node.setAttribute("Description", new Value((String) json.get("Description")));
 		
 		node.getListener().setOnListHandler(new Handler<Node>() {
@@ -52,7 +53,81 @@ public class AdvantechNode {
 		});
 	}
 	
+	AdvantechNode(AdvantechProject proj, Node node) {
+		this.project = proj;
+		this.node = node;
+		this.name = node.getName();
+		restoreLastSession();
+	}
+	
+	private void restoreLastSession() {
+		init(false);
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			Value dstype = child.getAttribute("_dstype");
+			if (dstype == null) {
+				node.removeChild(child);
+			} else if (dstype.getString().equals("port")) {
+				AdvantechPort ap = new AdvantechPort(this, child);
+				portList.put(ap.node.getAttribute("PortNumber").getNumber().toString(), ap);
+			} else if (dstype.getString().equals("block")) {
+				new AdvantechBlock(this, child);
+			} else if (dstype.getString().equals("tag") && child.getAttribute("_json") != null) {
+				//String jstring = child.getAttribute("_json").getString();
+				AdvantechTag at = new AdvantechTag(project, child);
+				at.init();
+			} else if (child.getAction() == null) {
+				node.removeChild(child);
+			}
+		}
+		
+	}
+	
 	void init() {
+		init(true);
+	}
+	
+	void init(boolean doQuery) {
+		
+		if (doQuery) queryApi();
+	
+		loaded = true;
+		
+		Action act = new Action(Permission.READ, new AlarmLogHandler());
+		act.addParameter(new Parameter("Start", ValueType.NUMBER));
+		act.addParameter(new Parameter("Count", ValueType.NUMBER));
+		act.addResult(new Parameter("Time", ValueType.STRING));
+		act.addResult(new Parameter("Priority", ValueType.STRING));
+		act.addResult(new Parameter("TagName", ValueType.STRING));
+		act.addResult(new Parameter("Description", ValueType.STRING));
+		act.addResult(new Parameter("Action", ValueType.STRING));
+		act.setResultType(ResultType.TABLE);
+		node.createChild("get alarm log").setAction(act).build().setSerializable(false);
+		
+		act = new Action(Permission.READ, new ActionLogHandler());
+		act.addParameter(new Parameter("Start", ValueType.NUMBER));
+		act.addParameter(new Parameter("Count", ValueType.NUMBER));
+		act.addResult(new Parameter("Time", ValueType.STRING));
+		act.addResult(new Parameter("Priority", ValueType.STRING));
+		act.addResult(new Parameter("TagName", ValueType.STRING));
+		act.addResult(new Parameter("Description", ValueType.STRING));
+		act.addResult(new Parameter("Action", ValueType.STRING));
+		act.setResultType(ResultType.TABLE);
+		node.createChild("get action log").setAction(act).build().setSerializable(false);
+		
+		act = new Action(Permission.READ, new AckAllHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
+	
+		act = new Action(Permission.READ, new AckHandler());
+		act.addParameter(new Parameter("IP Address", ValueType.STRING));
+		act.addParameter(new Parameter("Computer", ValueType.STRING));
+		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
+		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
+	}
+	
+	private void queryApi() {
 		Map<String, String> pars = new HashMap<String, String>();
 		pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
 		pars.put("ProjectName", project.name);
@@ -123,41 +198,6 @@ public class AdvantechNode {
 		} catch (ApiException e) {
 			LOGGER.debug("", e);
 		}
-		
-		loaded = true;
-		
-		Action act = new Action(Permission.READ, new AlarmLogHandler());
-		act.addParameter(new Parameter("Start", ValueType.NUMBER));
-		act.addParameter(new Parameter("Count", ValueType.NUMBER));
-		act.addResult(new Parameter("Time", ValueType.STRING));
-		act.addResult(new Parameter("Priority", ValueType.STRING));
-		act.addResult(new Parameter("TagName", ValueType.STRING));
-		act.addResult(new Parameter("Description", ValueType.STRING));
-		act.addResult(new Parameter("Action", ValueType.STRING));
-		act.setResultType(ResultType.TABLE);
-		node.createChild("get alarm log").setAction(act).build().setSerializable(false);
-		
-		act = new Action(Permission.READ, new ActionLogHandler());
-		act.addParameter(new Parameter("Start", ValueType.NUMBER));
-		act.addParameter(new Parameter("Count", ValueType.NUMBER));
-		act.addResult(new Parameter("Time", ValueType.STRING));
-		act.addResult(new Parameter("Priority", ValueType.STRING));
-		act.addResult(new Parameter("TagName", ValueType.STRING));
-		act.addResult(new Parameter("Description", ValueType.STRING));
-		act.addResult(new Parameter("Action", ValueType.STRING));
-		act.setResultType(ResultType.TABLE);
-		node.createChild("get action log").setAction(act).build().setSerializable(false);
-		
-		act = new Action(Permission.READ, new AckAllHandler());
-		act.addParameter(new Parameter("IP Address", ValueType.STRING));
-		act.addParameter(new Parameter("Computer", ValueType.STRING));
-		node.createChild("acknowledge all alarms").setAction(act).build().setSerializable(false);
-	
-		act = new Action(Permission.READ, new AckHandler());
-		act.addParameter(new Parameter("IP Address", ValueType.STRING));
-		act.addParameter(new Parameter("Computer", ValueType.STRING));
-		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
-		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
 	}
 	
 	private void handleBlocks(JsonArray blocks) {

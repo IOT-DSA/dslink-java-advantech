@@ -1,6 +1,6 @@
 {
   "name": "dslink-java-advantech",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "A dslink for advantech",
   "license": "Apache",
   "main": "bin/dslink-java-advantech",

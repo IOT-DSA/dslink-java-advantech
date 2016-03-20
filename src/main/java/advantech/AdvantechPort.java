@@ -28,6 +28,7 @@ public class AdvantechPort {
 		this.scada = scada;
 		String name = (String) json.get("InterfaceName") + (Number) json.get("PortNumber");
 		this.node = scada.node.createChild(name).build();
+		node.setAttribute("_dstype", new Value("port"));
 		node.setAttribute("InterfaceName", new Value((String) json.get("InterfaceName")));
 		node.setAttribute("PortNumber", new Value((Number) json.get("PortNumber")));
 		node.setAttribute("Description", new Value((String) json.get("Description")));
@@ -40,6 +41,34 @@ public class AdvantechPort {
 				init();
 			}
 		});
+	}
+	
+	AdvantechPort(AdvantechNode scada, Node node) {
+		this.scada = scada;
+		this.node = node;
+		restoreLastSession();
+	}
+	
+	private void restoreLastSession() {
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			Value dstype = child.getAttribute("_dstype");
+			if (dstype == null) {
+				node.removeChild(child);
+			} else if (dstype.getString().equals("device")) {
+				AdvantechDevice ad = new AdvantechDevice(this, child);
+				deviceList.put(ad.name, ad);
+			} else if (dstype.getString().equals("block")) {
+				new AdvantechBlock(this.scada, child);
+			} else if (dstype.getString().equals("tag") && child.getAttribute("_json") != null) {
+				//String jstring = child.getAttribute("_json").getString();
+				AdvantechTag at = new AdvantechTag(scada.project, child);
+				at.init();
+			} else if (child.getAction() == null) {
+				node.removeChild(child);
+			}
+		}
+		
 	}
 	
 	void init() {
