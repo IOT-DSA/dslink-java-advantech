@@ -53,15 +53,13 @@ public class AdvantechDevice {
 		for (Node child: node.getChildren().values()) {
 			Value dstype = child.getAttribute("_dstype");
 			if (dstype == null) {
-				node.removeChild(child);
+				if (child.getAction() == null) node.removeChild(child);
 			} else if (dstype.getString().equals("block")) {
 				new AdvantechBlock(this.port.scada, child);
 			} else if (dstype.getString().equals("tag") && child.getAttribute("_json") != null) {
 				//String jstring = child.getAttribute("_json").getString();
 				AdvantechTag at = new AdvantechTag(port.scada.project, child);
 				at.init();
-			} else if (child.getAction() == null) {
-				node.removeChild(child);
 			}
 		}
 		

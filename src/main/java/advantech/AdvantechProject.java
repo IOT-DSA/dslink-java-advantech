@@ -72,7 +72,7 @@ public class AdvantechProject {
 		for (Node child: node.getChildren().values()) {
 			Value dstype = child.getAttribute("_dstype");
 			if (dstype == null) {
-				node.removeChild(child);
+				if (child.getAction() == null) node.removeChild(child);
 			} else if (dstype.getString().equals("node")) {
 				AdvantechNode an = new AdvantechNode(this, child);
 				scadaList.put(an.name, an);
@@ -80,8 +80,6 @@ public class AdvantechProject {
 				//String jstring = child.getAttribute("_json").getString();
 				AdvantechTag at = new AdvantechTag(this, child);
 				at.init();
-			} else if (child.getAction() == null) {
-				node.removeChild(child);
 			}
 		}
 		
@@ -197,6 +195,9 @@ public class AdvantechProject {
 		act.addParameter(new Parameter("Computer", ValueType.STRING));
 		act.addParameter(new Parameter("Tag Names", ValueType.ARRAY));
 		node.createChild("acknowledge alarms").setAction(act).build().setSerializable(false);
+		
+		act = new Action(Permission.READ, new RebuildHandler());
+		node.createChild("rebuild").setAction(act).build().setSerializable(false);
 	}
 	
 	private void getTagDetails(JsonArray tagRequestList, Map<String, String> pars) {
@@ -212,6 +213,22 @@ public class AdvantechProject {
 		} catch (ApiException e) {
 			LOGGER.debug("", e);
 		}
+	}
+	
+	private class RebuildHandler implements Handler<ActionResult> {
+		public void handle(ActionResult event) {
+			clear();
+			refresh();
+			init();
+		}
+	}
+	
+	private void clear() {
+		if (node.getChildren() == null) return;
+		for (Node child: node.getChildren().values()) {
+			if (child.getAction() == null) node.removeChild(child);
+		}
+		
 	}
 	
 	private class AckAllHandler implements Handler<ActionResult> {

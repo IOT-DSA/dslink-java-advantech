@@ -66,7 +66,7 @@ public class AdvantechNode {
 		for (Node child: node.getChildren().values()) {
 			Value dstype = child.getAttribute("_dstype");
 			if (dstype == null) {
-				node.removeChild(child);
+				if (child.getAction() == null) node.removeChild(child);
 			} else if (dstype.getString().equals("port")) {
 				AdvantechPort ap = new AdvantechPort(this, child);
 				portList.put(ap.node.getAttribute("PortNumber").getNumber().toString(), ap);
@@ -76,9 +76,7 @@ public class AdvantechNode {
 				//String jstring = child.getAttribute("_json").getString();
 				AdvantechTag at = new AdvantechTag(project, child);
 				at.init();
-			} else if (child.getAction() == null) {
-				node.removeChild(child);
-			}
+			} 
 		}
 		
 	}

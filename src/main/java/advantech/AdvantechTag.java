@@ -55,6 +55,7 @@ public class AdvantechTag {
 		this.node = node;
 		this.name = node.getName();
 		this.displayNode = node.getChild("Display value");
+		setStates();
 		setListeners();
 		
 	}
@@ -71,6 +72,7 @@ public class AdvantechTag {
 		this.node = node;
 		this.name = node.getName();
 		this.displayNode = node.getChild("Display value");
+		setStates();
 		setListeners();
 		
 	}
@@ -107,6 +109,17 @@ public class AdvantechTag {
 			this.displayNode = node.createChild("Display value").setValueType(dispvt).build();
 			displayNode.getListener().setValueHandler(new DisplaySetHandler());
 			displayNode.setWritable(Writable.WRITE);
+		}
+	}
+	
+	private void setStates() {
+		JsonObject json = new JsonObject(node.getAttribute("_json").getString());
+		String type = json.get("TYPE");
+		if (isDiscrete(type)) {
+			for (int i=0; i<states.length; i++) {
+				String s = json.get("DESCR"+i);
+				states[i] = s;
+			}
 		}
 	}
 	
