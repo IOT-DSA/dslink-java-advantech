@@ -58,6 +58,10 @@ public class AdvantechConn {
 		pars.put("HostIp", node.getAttribute("IP").getString());
 		try {
 			String response = Utils.sendGet(Utils.SERVER_TIME, pars, auth);
+			if (response == null) {
+				timezone = TimeZone.getDefault();
+				return;
+			}
 			String offset =  (String) new JsonObject(response).get("Offset");
 			if (!offset.startsWith("-") && !offset.startsWith("+")) offset = "+" + offset;
 			String[] offsplit = offset.split(":");
