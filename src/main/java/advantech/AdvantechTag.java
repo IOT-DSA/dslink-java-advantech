@@ -48,6 +48,7 @@ public class AdvantechTag {
 	Node node;
 	Node displayNode;
 	String name;
+	boolean awaitingSet = false;
 	
 	final String[] states = new String[8];
 	
@@ -229,6 +230,10 @@ public class AdvantechTag {
 		public void handle(ValuePair event) {
 			if (!event.isFromExternalSource()) return;
 			
+			synchronized(AdvantechTag.this) {
+				awaitingSet = true;
+			}
+			
 			Map<String, String> pars = new HashMap<String, String>();
 			pars.put("ProjectName", project.name);
 			pars.put("HostIp", project.conn.node.getAttribute("IP").getString());
@@ -273,6 +278,10 @@ public class AdvantechTag {
 					// TODO Auto-generated catch block
 					LOGGER.debug("", e);
 				}
+			}
+			
+			synchronized(AdvantechTag.this) {
+				awaitingSet = false;
 			}
 		}
 	}

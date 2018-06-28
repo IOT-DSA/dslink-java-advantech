@@ -351,13 +351,19 @@ public class AdvantechProject {
 					AdvantechTag tag = subCopy.get((String) jo.get("Name"));
 					Object val = jo.get("Value");
 					String type = tag.node.getAttribute("TYPE").getString();
-					if (AdvantechTag.isAnalog(type)) tag.node.setValue(new Value((Number) val));
-					else if (AdvantechTag.isDiscrete(type)) {
-						tag.node.setValue(new Value((Integer) val));
-						int v = (Integer) val;
-						if (v >= 0 && v < tag.states.length) tag.displayNode.setValue(new Value(tag.states[v]));
+					boolean skip = false;
+					synchronized(tag) {
+						skip = tag.awaitingSet;
 					}
-					else tag.node.setValue(new Value(val.toString()));
+					if (!skip) {
+						if (AdvantechTag.isAnalog(type)) tag.node.setValue(new Value((Number) val));
+						else if (AdvantechTag.isDiscrete(type)) {
+							tag.node.setValue(new Value((Integer) val));
+							int v = (Integer) val;
+							if (v >= 0 && v < tag.states.length) tag.displayNode.setValue(new Value(tag.states[v]));
+						}
+						else tag.node.setValue(new Value(val.toString()));
+					}
 				}
 			}
 		} catch (ApiException e) {
