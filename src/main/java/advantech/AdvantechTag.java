@@ -3,6 +3,7 @@ package advantech;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -421,8 +422,12 @@ public class AdvantechTag {
 		}
 		
 		if (parser != null) {
-			intervalMillis = parser.incrementTime();
-			
+		    intervalMillis = System.currentTimeMillis();
+		    Calendar cal = Calendar.getInstance();
+		    cal.setTimeInMillis(intervalMillis);
+		    parser.nextInterval(cal);
+		    intervalMillis = cal.getTimeInMillis() - intervalMillis;
+
 			recs = (int) ((to - from)/intervalMillis);
 			if (recs < 1) recs = 1;
 		} else {
