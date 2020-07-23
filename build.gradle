@@ -1,11 +1,10 @@
 apply plugin: 'application'
-apply plugin: 'findbugs'
 apply plugin: 'java-library'
 
 mainClassName = 'advantech.Main'
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
-version = '0.1.0-SNAPSHOT'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+version = '0.2.0'
 
 repositories {
     mavenCentral()
@@ -15,8 +14,8 @@ repositories {
 }
  
 dependencies {
-    api 'org.iot-dsa:historian:0.20.1'
-    implementation 'commons-codec:commons-codec:1.11'
+    api 'org.iot-dsa:historian:0.24.0'
+    implementation 'commons-codec:commons-codec:1.14'
 }
 
 run {
@@ -25,14 +24,7 @@ run {
 }
 
 wrapper {
-    gradleVersion = '4.10'
-}
-
-tasks.withType(FindBugs) {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
+    gradleVersion = '6.5'
 }
 
 applicationDistribution.from new File(project.projectDir, "/dslink.json")
